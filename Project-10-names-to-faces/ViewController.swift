@@ -20,6 +20,18 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
             target: self,
             action: #selector(addNewPerson)
         )
+        
+        let defaults = UserDefaults.standard
+        
+        if let savedPeople = defaults.object(forKey: "peope") as? Data {
+            let jsonEncoder = JSONDecoder()
+            do {
+                people = try jsonEncoder.decode([Person].self, from: savedPeople)
+            } catch {
+                print("Failed to get people.")
+            }
+        }
+        
     }
     
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -55,6 +67,10 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
         // validate access camera user
         if UIImagePickerController.isSourceTypeAvailable(.camera) {
             picker.sourceType = .camera
+            picker.delegate = self
+            present(picker, animated: true)
+        } else  {
+            picker.sourceType = .photoLibrary
             picker.delegate = self
             present(picker, animated: true)
         }
@@ -98,6 +114,7 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
             person.name = newName
 
             self?.collectionView.reloadData()
+            self?.save()
         }
         ac.addAction(submitAction)
 
@@ -116,6 +133,7 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
         let person = Person(name: "Unknown", image: imageName)
         people.append(person)
         collectionView.reloadData()
+        save()
         
         dismiss(animated: true)
     }
@@ -123,6 +141,18 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
     func getDocumentsDirectory() -> URL {
         let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
         return path[0]
+    }
+    
+    func save(){
+        let jsonEncoder = JSONEncoder()
+        
+        if let savedData = try? jsonEncoder.encode(people) {
+            let defaults = UserDefaults.standard
+            defaults.setValue(savedData, forKey: "peope")
+        } else {
+            print("Failed to save people.")
+        }
+        
     }
 
 
